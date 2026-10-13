@@ -79,27 +79,47 @@ HeadsetView (chạy song song): camera AR vẽ ảnh camera thật vào RenderTe
 ## 3. Cấu trúc thư mục và script
 
 ```
-Assets/
-├── Markers/
-│   ├── heart_marker2.jpg        ảnh marker để in
-│   └── HeartLibrary.asset       Reference Image Library (ảnh tên "heart", 0.196 × 0.257 m)
-├── Models/heart.glb             mô hình tim (nhập bằng glTFast)
-├── Scenes/SampleScene.unity     scene chính (scene duy nhất trong Build)
-├── Scripts/
-│   ├── DepthMask.shader         shader URP chỉ ghi depth, không ghi màu
-│   ├── DepthMaskMat.mat         material dùng shader trên, gán cho Occluder
-│   ├── HeartTracker.cs          theo dõi marker, bật/tắt và đặt vị trí HeartAnchor
-│   ├── HeartEmerge.cs           hoạt ảnh tim trồi lên, bật Hotspots khi xong
-│   ├── HeartInteraction.cs      cầm tay: kéo để xoay, chụm hai ngón để zoom
-│   ├── HeadsetView.cs           chế độ kính VR: 2 nửa màn hình, stereo, bù méo, khóa 30 fps
-│   ├── LensDistortUI.shader     shader UI méo thùng để bù méo thấu kính (HeadsetView dùng)
-│   ├── GazeLabel.cs             chọn bằng ánh nhìn (dwell 1.5 s) hoặc chạm
-│   ├── HeartPart.cs             một bộ phận tim + nhãn, có Toggle()
-│   ├── FaceCamera.cs            xoay nhãn về phía camera
-│   ├── FitHeartToMarker.cs      công cụ Editor: chỉnh kích thước và đặt tim lên mặt giấy
-│   └── Editor/HeartSceneSetup.cs  menu Heart VR: dựng Hotspots (collider, sphere màu, nhãn)
-└── Settings/                    URP asset cho PC và Mobile
+heart_VR/                              thư mục gốc của repo
+├── Assets/                            project Unity (bản điện thoại)
+│   ├── Markers/
+│   │   ├── heart_marker2.jpg          ảnh marker để in (bản web dùng chung)
+│   │   └── HeartLibrary.asset         Reference Image Library (ảnh tên "heart", 0.196 × 0.257 m)
+│   ├── Materials/Hotspots/            material màu của 12 chấm hotspot (menu Heart VR tạo)
+│   ├── Models/heart.glb               mô hình tim, nhập bằng glTFast (bản web dùng chung)
+│   ├── Scenes/SampleScene.unity       scene chính (scene duy nhất trong Build)
+│   ├── Scripts/
+│   │   ├── DepthMask.shader           shader URP chỉ ghi depth, không ghi màu
+│   │   ├── DepthMaskMat.mat           material dùng shader trên, gán cho Occluder
+│   │   ├── HeartTracker.cs            theo dõi marker, bật/tắt và đặt vị trí HeartAnchor
+│   │   ├── HeartEmerge.cs             hoạt ảnh tim trồi lên, bật Hotspots khi xong
+│   │   ├── HeartInteraction.cs        cầm tay: kéo để xoay, chụm hai ngón để zoom
+│   │   ├── HeadsetView.cs             chế độ kính VR: 2 nửa màn hình, stereo, bù méo, khóa 30 fps
+│   │   ├── LensDistortUI.shader       shader UI méo thùng để bù méo thấu kính (HeadsetView dùng)
+│   │   ├── GazeLabel.cs               chọn bộ phận bằng ánh nhìn (dwell 1.5 s) hoặc chạm
+│   │   ├── HeartPart.cs               một bộ phận tim + chấm màu + nhãn
+│   │   ├── FaceCamera.cs              xoay nhãn về phía camera
+│   │   ├── FitHeartToMarker.cs        công cụ Editor: chỉnh kích thước và đặt tim lên mặt giấy
+│   │   └── Editor/
+│   │       └── HeartSceneSetup.cs     menu Heart VR: dựng 12 hotspot, đặt sát bề mặt tim
+│   ├── Settings/                      URP asset cho PC và Mobile, Build Profile Android
+│   ├── TextMesh Pro/                  font và shader cho nhãn chữ (TMP Essential Resources)
+│   ├── XR/                            cài đặt ARCore và XR Plug-in Management
+│   └── Prefabs/, TutorialInfo/, Readme.asset   còn lại từ template, không dùng
+├── Packages/                          danh sách package Unity (manifest.json)
+├── ProjectSettings/                   cài đặt project Unity
+├── web/                               bản chạy trên trình duyệt bằng webcam laptop (mục 13)
+│   ├── index.html                     giao diện; nạp three.js và MindAR từ CDN
+│   ├── main.js                        logic AR: nhận diện marker, trồi lên, xoay/zoom, hotspot
+│   ├── heart-data.js                  vị trí đặt tim và 12 hotspot
+│   ├── start.bat                      chạy web server và mở trình duyệt
+│   └── README.md                      hướng dẫn chạy bản web
+├── file .glb/heart.glb                bản sao mô hình tim, project không dùng
+├── README.md                          tài liệu này
+├── .gitignore, ignore.conf            danh sách file bỏ qua cho Git / Unity Version Control
+└── .nojekyll                          để GitHub Pages đưa file lên nguyên trạng
 ```
+
+**Script của bản Unity (điện thoại):**
 
 | Script | Gắn lên | Việc làm |
 |---|---|---|
@@ -107,11 +127,23 @@ Assets/
 | `HeartEmerge` | `HeartAnchor` | Di chuyển `HeartModel` từ dưới mặt giấy lên, phóng to dần; xong thì bật `Hotspots` |
 | `HeartInteraction` | `HeartAnchor` | Cầm tay: kéo một ngón để xoay, chụm/mở hai ngón để zoom (Editor: kéo chuột trái, cuộn chuột). Lúc chạy tự tạo `InteractPivot` ở tâm tim và chuyển `Visual` + `Hotspots` vào đó; tắt khi đeo kính; trả về góc nhìn gốc khi tim trồi lên lại |
 | `HeadsetView` | `Canvas` | Camera AR vẽ ảnh camera thật vào RenderTexture, hiển thị lên `LeftEye`/`RightEye` (mỗi bên lấy nửa giữa khung hình); bật **Stereo** thì tự tạo 2 camera mắt lệch nhau **Ipd** để vẽ tim (có chiều sâu); bù méo thấu kính; khóa màn hình ngang, 30 fps, không tắt màn hình; tự tạo camera đen để xóa nền |
-| `GazeLabel` | `Main Camera` (camera AR) | Bắn tia từ giữa camera; nhìn một `HeartPart` đủ lâu thì gọi `Toggle()` (mặc định chỉ khi đeo kính); chạm màn hình cũng bật/tắt (cầm tay: chạm vào bộ phận; đeo kính: chạm = nút bấm, chọn thứ đang nhìn). Chỉ tính là chạm khi nhấn-thả nhanh, không kéo, một ngón; có thể hiện vòng tiến độ |
-| `HeartPart` | Mỗi bộ phận trong `Hotspots` | Giữ tham chiếu tới object nhãn, `Toggle()` / `Show(bool)` |
+| `GazeLabel` | `Main Camera` (camera AR) | Bắn tia từ giữa camera; nhìn một `HeartPart` đủ lâu thì chọn nó (mặc định chỉ khi đeo kính). Chạm màn hình cũng chọn: cầm tay thì chạm vào bộ phận, đeo kính thì chạm là nút bấm và chọn thứ đang nhìn. Chỉ tính là chạm khi nhấn-thả nhanh, không kéo, một ngón. **Only One Label** bật thì mỗi lúc chỉ một nhãn; có thể hiện vòng tiến độ |
+| `HeartPart` | Mỗi bộ phận trong `Hotspots` | Giữ tham chiếu tới nhãn (`Label`) và chấm màu (`Marker`). `Select()` hiện nhãn bộ phận này, ẩn nhãn các bộ phận khác và phóng to chấm đang chọn; `Toggle()` / `Show(bool)` bật/tắt riêng. Bấm chấm màu trong cửa sổ Scene sẽ chọn cả bộ phận |
 | `FaceCamera` | Object nhãn | Xoay nhãn về phía `Camera.main` mỗi khung hình |
 | `FitHeartToMarker` | `Visual` (con của `HeartModel`) | Chỉ dùng trong Editor, qua menu chuột phải của component |
-| `HeartSceneSetup` | (không gắn; menu **Heart VR**) | Chỉ dùng trong Editor: dựng Hotspots, xem Bước 6.6 |
+| `HeartSceneSetup` | (không gắn; menu **Heart VR**) | Chỉ dùng trong Editor: dựng 12 hotspot ở vị trí đo sẵn, dò bề mặt tim để đặt chấm sát mặt, xem Bước 6.6 |
+| `DepthMask.shader` | `DepthMaskMat` trên `Occluder` | Chỉ ghi depth ở mặt giấy để che phần tim còn nằm dưới giấy |
+| `LensDistortUI.shader` | RawImage của `HeadsetView` | Méo thùng hình trước để bù méo của thấu kính kính VR |
+
+**File của bản web (thư mục `web/`):**
+
+| File | Việc làm |
+|---|---|
+| `index.html` | Trang web: khung AR (video webcam + canvas 3D), nhãn tên, bảng hướng dẫn, nút **Đặt lại góc nhìn**, thông báo lỗi. Importmap nạp three.js 0.160.0 và MindAR 1.2.5 từ CDN |
+| `main.js` | `loadTargets()` chuyển ảnh marker sang dữ liệu của MindAR (lần đầu) rồi lưu trong trình duyệt. `buildScene()` đặt tim, occluder và 12 hotspot lên marker, xử lý tìm thấy/mất dấu marker và hoạt ảnh trồi lên. `setupInput()` xử lý kéo xoay, lăn/chụm zoom và bấm chọn hotspot |
+| `heart-data.js` | Ma trận đặt lưới tim lên marker, tâm tim, vị trí/tên/màu 12 hotspot (đổi từ bảng `Parts` của `HeartSceneSetup`) |
+| `start.bat` | Chạy web server Python ở thư mục gốc repo (để đọc được `Assets/`) rồi mở trình duyệt |
+| `README.md` | Hướng dẫn chạy và sử dụng bản web |
 
 ---
 

@@ -73,16 +73,32 @@ Sau đó ai cũng mở được link trên bằng Chrome hoặc Edge, cho phép 
 - Giữ tờ giấy ở giữa khung hình, cách webcam khoảng 30–50 cm. Tờ giấy nên chiếm từ một nửa chiều cao khung hình trở lên.
 - Hình webcam **không lật như gương** (giống ảnh chụp bằng camera), để hai bên phải/trái của tim hiển thị đúng giải phẫu.
 
-## Cấu trúc thư mục
+## Cấu trúc thư mục và script
 
 ```
-web/
-├── index.html     giao diện; nạp three.js 0.160.0 và MindAR 1.2.5 từ CDN (importmap)
-├── main.js        nhận diện marker, hoạt ảnh trồi lên, occluder, xoay/zoom, hotspot, nhãn
-├── heart-data.js  ma trận đặt tim lên marker, vị trí/tên/màu 12 hotspot (đo trên heart.glb)
-├── start.bat      chạy web server ở thư mục gốc repo rồi mở trình duyệt
-└── README.md
+heart_VR/                               thư mục gốc của repo (web server chạy ở đây)
+├── Assets/
+│   ├── Models/heart.glb                mô hình tim (dùng chung với bản Unity)
+│   └── Markers/heart_marker2.jpg       ảnh marker (dùng chung với bản Unity)
+└── web/
+    ├── index.html                      giao diện; nạp three.js 0.160.0 và MindAR 1.2.5 từ CDN (importmap)
+    ├── main.js                         toàn bộ logic AR
+    ├── heart-data.js                   vị trí đặt tim và 12 hotspot (đo trên heart.glb)
+    ├── start.bat                       chạy web server ở thư mục gốc repo rồi mở trình duyệt
+    ├── .gitattributes                  giữ start.bat xuống dòng kiểu Windows khi tải từ GitHub
+    └── README.md                       tài liệu này
 ```
+
+| File / hàm | Việc làm |
+|---|---|
+| `index.html` | Khung AR `#ar` (MindAR đặt video webcam và canvas 3D vào đây), nhãn tên `#label`, bảng hướng dẫn với nút **Đặt lại góc nhìn**, khung thông báo lỗi `#error`. Importmap trỏ `three` và `mindar-image*` tới CDN |
+| `main.js` → hằng số đầu file | Đường dẫn mô hình/marker và các thông số chỉnh được (xem bảng thông số bên dưới) |
+| `main.js` → `main()` | Kiểm tra trang mở qua localhost/https, chuẩn bị marker, tải mô hình, tạo MindAR, mở webcam, chạy vòng vẽ mỗi khung hình |
+| `main.js` → `loadTargets()` | Lần đầu chuyển ảnh marker sang dữ liệu đặc trưng của MindAR (`Compiler`), lưu vào IndexedDB; những lần sau đọc lại ngay |
+| `main.js` → `buildScene()` | Ánh sáng, anchor của marker, occluder ở mặt giấy, lưới tim (đặt bằng `HEART_MESH_MATRIX`), 12 hotspot (chấm màu + vùng bấm vô hình). Xử lý tìm thấy/mất dấu marker, hoạt ảnh trồi lên, chọn hotspot và đặt nhãn cạnh chấm đang chọn |
+| `main.js` → `setupInput()` | Chuột và cảm ứng: kéo để xoay quanh tâm tim, lăn chuột / chụm hai ngón để zoom, nhấn-thả nhanh để bấm hotspot (bắn tia từ chỗ bấm), nút đặt lại góc nhìn |
+| `heart-data.js` | `HEART_MESH_MATRIX` (đặt lưới tim lên marker), `HEART_CENTER`, `HEART_BOTTOM`, `HOTSPOTS` (id, tên tiếng Anh, màu, vị trí) |
+| `start.bat` | Tìm Python, chạy `python -m http.server 8000 --bind 127.0.0.1` ở thư mục gốc repo, mở `http://localhost:8000/web/` |
 
 > MindAR 1.2.5 chỉ chạy với three.js bản trước r162, nên `index.html` cố định three.js ở 0.160.0. Đừng nâng bản three.js.
 
