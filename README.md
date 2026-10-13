@@ -21,6 +21,7 @@ Project được làm nhẹ để chạy trên điện thoại cấu hình yếu
 10. [Debug bằng log `[DBG]`](#10-debug-bằng-log-dbg)
 11. [Xử lý sự cố](#11-xử-lý-sự-cố)
 12. [Mẹo cho điện thoại yếu](#12-mẹo-cho-điện-thoại-yếu)
+13. [Phiên bản web chạy bằng webcam laptop](#13-phiên-bản-web-chạy-bằng-webcam-laptop)
 
 ---
 
@@ -459,6 +460,14 @@ Khi **Debug Logs** bật, `HeartTracker` và `HeartEmerge` in các dòng bắt �
 - Tắt **Post Processing** trên camera, có thể xóa `Global Volume`.
 - Nếu `heart.glb` nhiều polygon, giảm lưới bằng phần mềm 3D (Blender: *Decimate*) trước khi nhập.
 - Giữ **Max Number Of Moving Images** = 1 và chỉ để 1 ảnh trong `HeartLibrary`.
+
+---
+
+## 13. Phiên bản web chạy bằng webcam laptop
+
+Thư mục `web/` (cạnh `Assets/`) là bản chạy trên trình duyệt Chrome/Edge bằng webcam laptop, viết bằng MindAR + three.js. Bản này có cùng hiệu ứng tim trồi lên từ tờ giấy và cùng 12 hotspot; kéo chuột để xoay, lăn chuột để zoom, bấm chấm màu để hiện tên. Nó dùng chung `Assets/Models/heart.glb` và ảnh marker với bản Unity, còn Unity bỏ qua thư mục `web/` nên bản điện thoại không bị ảnh hưởng.
+
+Cách chạy nhanh trên Windows: nháy đúp `web/start.bat` (cần Python 3), cho phép camera, rồi giơ tờ giấy in marker vào giữa khung hình webcam. Nếu bật GitHub Pages cho repo, trang còn chạy online tại https://luongduy0703.github.io/human_heart_vr/web/ mà không cần cài gì. Hướng dẫn đầy đủ (Windows, macOS/Linux, GitHub Pages) xem [web/README.md](web/README.md).
 
 ---
 

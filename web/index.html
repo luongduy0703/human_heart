@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trái tim AR – webcam</title>
+  <link rel="icon" href="data:,">
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: #eee;
+      font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+    }
+    /* Khung AR: MindAR đặt video webcam (z-index -2) và canvas 3D vào đây */
+    #ar {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+      touch-action: none;
+      cursor: grab;
+    }
+    #ar:active { cursor: grabbing; }
+    #label {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 3;
+      pointer-events: none;
+      padding: 5px 12px;
+      border-left: 5px solid #fff;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    #panel {
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      z-index: 10;
+      max-width: min(360px, calc(100vw - 24px));
+      box-sizing: border-box;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(15, 15, 20, 0.8);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    #panel h1 { margin: 0 0 4px; font-size: 16px; }
+    #status { margin: 0 0 6px; color: #ffd76a; }
+    #help { margin: 0 0 8px; padding-left: 18px; }
+    #reset {
+      padding: 6px 12px;
+      border: 0;
+      border-radius: 6px;
+      background: #2f6fde;
+      color: #fff;
+      font: inherit;
+      cursor: pointer;
+    }
+    .credit { margin: 8px 0 0; font-size: 12px; color: #aaa; }
+    .credit a { color: #aaa; }
+    #error {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.88);
+      font-size: 17px;
+      line-height: 1.5;
+      text-align: center;
+    }
+    #error[hidden] { display: none; }
+  </style>
+  <!-- MindAR 1.2.5 cần three.js bản trước r162 (dùng sRGBEncoding), nên giữ three 0.160.0 -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+        "mindar-image": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js",
+        "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+      }
+    }
+  </script>
+  <script type="module" src="./main.js"></script>
+</head>
+<body>
+  <div id="ar">
+    <div id="label" hidden></div>
+  </div>
+
+  <div id="panel">
+    <h1>Trái tim AR</h1>
+    <p id="status">Đang khởi động…</p>
+    <ul id="help">
+      <li>Kéo chuột (hoặc một ngón): xoay tim</li>
+      <li>Lăn chuột (hoặc chụm hai ngón): phóng to / thu nhỏ</li>
+      <li>Bấm vào chấm màu: hiện tên bộ phận</li>
+    </ul>
+    <button id="reset" type="button">Đặt lại góc nhìn</button>
+    <p class="credit">
+      Mô hình tim: <a href="https://sketchfab.com/3d-models/human-heart-3d-model-anatomy-medical-project-5da08bb137014f0392c69f9997f777cd" target="_blank" rel="noopener">Human Heart 3D Model</a>
+      của Mesh-Magnet, giấy phép CC BY 4.0
+    </p>
+  </div>
+
+  <div id="error" hidden></div>
+</body>
+</html>

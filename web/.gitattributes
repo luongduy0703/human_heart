@@ -1,0 +1,2 @@
+# start.bat phải giữ xuống dòng kiểu Windows (CRLF) kể cả khi tải ZIP từ GitHub
+*.bat text eol=crlf
