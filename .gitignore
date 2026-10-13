@@ -1,0 +1,45 @@
+# Thư mục Unity tự sinh
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Bb]uild/
+/[Bb]uilds/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Unity Version Control (Plastic SCM)
+/.plastic/
+
+# IDE (Visual Studio, Rider, VS Code) và file project tự sinh
+.vs/
+.idea/
+.vscode/
+*.csproj
+*.sln
+*.suo
+*.user
+*.pidb
+*.booproj
+
+# File build và kết quả test
+*.apk
+*.aab
+*.unitypackage
+TestResults.xml
+crashlytics-build.properties
+
+# Hệ điều hành
+Thumbs.db
+.DS_Store
+
+# Claude Code (chỉ dùng trên máy cá nhân, không đẩy lên repo của lab)
+/CLAUDE.md
+/CLAUDE.local.md
+/.claude/
+
+# Thư mục tạm/backup do Unity build sinh ra
+/.utmp/
+*_BackUpThisFolder_ButDontShipItWithYourGame/
+*_BurstDebugInformation_DoNotShip/
