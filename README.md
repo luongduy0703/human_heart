@@ -1,9 +1,10 @@
 # Trái tim sống — AR trong kính VR
 
-Bài thực hành AR: điện thoại đặt trong kính VR (kiểu Cardboard), nhìn vào một tờ giấy in marker thì **trái tim 3D chui ra dần dần từ mặt giấy**. Khi tim đã ra hết, **nhìn chằm chằm vào một bộ phận tim khoảng 1.5 giây** để bật/tắt nhãn tên của bộ phận đó (chọn bằng ánh nhìn, không cần chạm màn hình).
+Bài thực hành AR: điện thoại đặt trong kính VR (kiểu Cardboard), nhìn vào một tờ giấy in marker thì **trái tim 3D chui ra dần dần từ mặt giấy**. Khi tim đã ra hết, **nhìn chằm chằm vào một bộ phận tim khoảng 1.5 giây** để bật/tắt nhãn tên của bộ phận đó (chọn bằng ánh nhìn). Khi cầm máy trên tay (không đeo kính): **kéo một ngón để xoay tim**, **chụm/mở hai ngón để thu nhỏ/phóng to**, **chạm vào chấm màu (hotspot)** trên tim để hiện tên bộ phận đó (chỉ nhãn của bộ phận đang chọn hiện, nhãn khác tự ẩn). Có 12 bộ phận, nhãn ghi bằng tiếng Anh: Right/Left atrium, Right/Left ventricle, Aorta, Pulmonary trunk, Superior/Inferior vena cava, Pulmonary veins, Right/Left coronary artery, Apex.
 
 Project được làm nhẹ để chạy trên điện thoại cấu hình yếu (ví dụ Vsmart Joy): khóa 30 fps, render ở độ phân giải thấp hơn màn hình, không dùng hậu kỳ.
 
+// Kết quả mong đợi: xuất hiện quả tim có hiệu ứng chui ra từ trong giấy
 ---
 
 ## Mục lục
@@ -35,7 +36,6 @@ Project được làm nhẹ để chạy trên điện thoại cấu hình yếu
 | Kính | Kính VR dạng hộp đặt điện thoại (Cardboard hoặc tương tự), **phải để lộ camera sau** của điện thoại |
 | Marker | Tờ giấy in ảnh `Assets/Markers/heart_marker2.jpg` |
 
-> Máy có cài cả Unity 2021.3, **đừng mở project bằng bản đó**.
 
 ---
 
@@ -45,7 +45,7 @@ Project được làm nhẹ để chạy trên điện thoại cấu hình yếu
 Camera AR thấy marker
         │
         ▼
-HeartTracker ── đặt HeartAnchor trùng vị trí marker, bật HeartAnchor
+HeartTracker ── đặt HeartAnchor theo marker (làm mượt), bật HeartAnchor
         │
         ▼
 HeartEmerge ── HeartModel trồi lên từ dưới mặt giấy và lớn dần (SmoothStep)
@@ -54,18 +54,22 @@ HeartEmerge ── HeartModel trồi lên từ dưới mặt giấy và lớn d�
 Tim ra hết → bật Hotspots (các bộ phận tim có Collider)
         │
         ▼
-GazeLabel ── tia từ giữa camera trúng một HeartPart đủ 1.5 s → HeartPart.Toggle()
+GazeLabel ── đeo kính: tia từ giữa camera trúng một HeartPart đủ 1.5 s; cầm tay: chạm vào nó → HeartPart.Toggle()
         │
         ▼
 Nhãn hiện/ẩn, FaceCamera luôn xoay nhãn về phía người xem
 
-HeadsetView (chạy song song): camera AR vẽ vào RenderTexture → hiển thị lên 2 nửa màn hình trái/phải
+HeartInteraction (cầm tay): kéo một ngón → xoay tim, chụm hai ngón → zoom (xoay/zoom InteractPivot trong HeartModel)
+
+HeadsetView (chạy song song): camera AR vẽ ảnh camera thật vào RenderTexture, hai camera mắt lệch nhau
+            vẽ tim → hiển thị lên 2 nửa màn hình trái/phải (có chiều sâu 3D, bù méo thấu kính)
 ```
 
 **Mẹo "chui ra từ tờ giấy":** `Occluder` là một mặt phẳng tàng hình nằm đúng mặt giấy. Shader `Custom/DepthMask` **không vẽ màu** (nên vẫn thấy hình camera) nhưng **có ghi độ sâu** và được vẽ **trước** tim (`Queue = Geometry-10`). Vì vậy mọi phần tim nằm dưới mặt phẳng đó bị che, trông như tim đang chui lên từ trong tờ giấy.
 
 **Quy tắc bật/tắt tim** (`HeartTracker`):
-- Trạng thái ảnh **Tracking** hoặc **Limited** → coi là đang thấy marker: cập nhật vị trí, giữ tim bật. (Máy yếu hay rơi về Limited dù marker nằm yên trên bàn.)
+- Trạng thái ảnh **Tracking** → đang thấy marker: bật tim, cập nhật vị trí. Tim không nhảy thẳng tới vị trí mới mà trượt dần tới đó (hệ số `1 - e^(-Smoothing·dt)`) để không bị rung.
+- Trạng thái **Limited** → giữ tim đứng yên ở vị trí cũ, không cập nhật. ARCore gần như không bao giờ trả về None khi marker ra khỏi khung hình mà giữ Limited mãi, nên nếu Limited kéo dài quá **Limited Timeout** (1 giây) thì coi là mất dấu và tắt tim. Chớp Limited ngắn (máy yếu hay bị) không làm tắt tim.
 - Trạng thái **None** hoặc ảnh **bị xóa khỏi danh sách** → tắt tim.
 - Khi thấy lại marker mà đã mất dấu **quá 2 giây** → phát lại hoạt ảnh trồi lên từ đầu.
 
@@ -85,23 +89,28 @@ Assets/
 │   ├── DepthMaskMat.mat         material dùng shader trên, gán cho Occluder
 │   ├── HeartTracker.cs          theo dõi marker, bật/tắt và đặt vị trí HeartAnchor
 │   ├── HeartEmerge.cs           hoạt ảnh tim trồi lên, bật Hotspots khi xong
-│   ├── HeadsetView.cs           chế độ kính VR: 2 nửa màn hình, khóa 30 fps
-│   ├── GazeLabel.cs             chọn bằng ánh nhìn (dwell 1.5 s)
+│   ├── HeartInteraction.cs      cầm tay: kéo để xoay, chụm hai ngón để zoom
+│   ├── HeadsetView.cs           chế độ kính VR: 2 nửa màn hình, stereo, bù méo, khóa 30 fps
+│   ├── LensDistortUI.shader     shader UI méo thùng để bù méo thấu kính (HeadsetView dùng)
+│   ├── GazeLabel.cs             chọn bằng ánh nhìn (dwell 1.5 s) hoặc chạm
 │   ├── HeartPart.cs             một bộ phận tim + nhãn, có Toggle()
 │   ├── FaceCamera.cs            xoay nhãn về phía camera
-│   └── FitHeartToMarker.cs      công cụ Editor: chỉnh kích thước và đặt tim lên mặt giấy
+│   ├── FitHeartToMarker.cs      công cụ Editor: chỉnh kích thước và đặt tim lên mặt giấy
+│   └── Editor/HeartSceneSetup.cs  menu Heart VR: dựng Hotspots (collider, sphere màu, nhãn)
 └── Settings/                    URP asset cho PC và Mobile
 ```
 
 | Script | Gắn lên | Việc làm |
 |---|---|---|
-| `HeartTracker` | `XR Origin` | Nghe sự kiện `trackablesChanged` của `ARTrackedImageManager` (AR Foundation 6), đặt `HeartAnchor` theo marker, báo cho `HeartEmerge` khi thấy lại marker |
+| `HeartTracker` | `XR Origin` | Nghe sự kiện `trackablesChanged` của `ARTrackedImageManager` (AR Foundation 6), đặt `HeartAnchor` theo marker (làm mượt), tắt khi Limited quá lâu, báo cho `HeartEmerge` khi thấy lại marker |
 | `HeartEmerge` | `HeartAnchor` | Di chuyển `HeartModel` từ dưới mặt giấy lên, phóng to dần; xong thì bật `Hotspots` |
-| `HeadsetView` | `Canvas` | Camera AR vẽ vào RenderTexture, hiển thị lên `LeftEye`/`RightEye` (mỗi bên lấy nửa giữa khung hình); khóa 30 fps; không tắt màn hình; tự tạo camera đen để xóa nền |
-| `GazeLabel` | `Main Camera` (camera AR) | Bắn tia từ giữa camera; nhìn một `HeartPart` đủ lâu thì gọi `Toggle()`; có thể hiện vòng tiến độ |
+| `HeartInteraction` | `HeartAnchor` | Cầm tay: kéo một ngón để xoay, chụm/mở hai ngón để zoom (Editor: kéo chuột trái, cuộn chuột). Lúc chạy tự tạo `InteractPivot` ở tâm tim và chuyển `Visual` + `Hotspots` vào đó; tắt khi đeo kính; trả về góc nhìn gốc khi tim trồi lên lại |
+| `HeadsetView` | `Canvas` | Camera AR vẽ ảnh camera thật vào RenderTexture, hiển thị lên `LeftEye`/`RightEye` (mỗi bên lấy nửa giữa khung hình); bật **Stereo** thì tự tạo 2 camera mắt lệch nhau **Ipd** để vẽ tim (có chiều sâu); bù méo thấu kính; khóa màn hình ngang, 30 fps, không tắt màn hình; tự tạo camera đen để xóa nền |
+| `GazeLabel` | `Main Camera` (camera AR) | Bắn tia từ giữa camera; nhìn một `HeartPart` đủ lâu thì gọi `Toggle()` (mặc định chỉ khi đeo kính); chạm màn hình cũng bật/tắt (cầm tay: chạm vào bộ phận; đeo kính: chạm = nút bấm, chọn thứ đang nhìn). Chỉ tính là chạm khi nhấn-thả nhanh, không kéo, một ngón; có thể hiện vòng tiến độ |
 | `HeartPart` | Mỗi bộ phận trong `Hotspots` | Giữ tham chiếu tới object nhãn, `Toggle()` / `Show(bool)` |
 | `FaceCamera` | Object nhãn | Xoay nhãn về phía `Camera.main` mỗi khung hình |
 | `FitHeartToMarker` | `Visual` (con của `HeartModel`) | Chỉ dùng trong Editor, qua menu chuột phải của component |
+| `HeartSceneSetup` | (không gắn; menu **Heart VR**) | Chỉ dùng trong Editor: dựng Hotspots, xem Bước 6.6 |
 
 ---
 
@@ -135,7 +144,7 @@ Assets/
 | Other Settings → **Minimum API Level** | Theo yêu cầu của ARCore (Project Validation sẽ báo nếu thấp quá) |
 | Other Settings → **Scripting Backend** | **IL2CPP** |
 | Other Settings → **Target Architectures** | Tick **ARM64** |
-| Other Settings → **Active Input Handling** | **Input System Package (New)** (đã đặt sẵn) |
+| Other Settings → **Active Input Handling** | **Input System Package (New)** (không để *Both*: Android không hỗ trợ, Unity sẽ hỏi lúc build; đổi xong Unity tự khởi động lại) |
 
 ### Bước 4.6 — URP: thêm AR Background Renderer Feature
 Thiếu bước này thì **màn hình đen, không thấy hình camera**.
@@ -168,20 +177,29 @@ Lần đầu tạo chữ TextMeshPro, Unity sẽ hỏi nhập tài nguyên: bấ
 
 ```
 AR Session                         (ARSession, ARInputManager)
-XR Origin                          (XROrigin, ARTrackedImageManager, HeartTracker)
+XR Origin                          (XROrigin, ARTrackedImageManager, HeartTracker) — KHÔNG gắn GazeLabel ở đây
 └── Camera Offset
     └── Main Camera                (Camera, ARCameraManager, ARCameraBackground,
                                     TrackedPoseDriver, GazeLabel)  — tag: MainCamera
-HeartAnchor                        (HeartEmerge)
+HeartAnchor                        (HeartEmerge, HeartInteraction)
 ├── Occluder                       (Plane/Quad + DepthMaskMat, KHÔNG có Collider)
 └── HeartModel
     ├── Visual                     (mô hình heart.glb, FitHeartToMarker)
     └── Hotspots
-        ├── TamNhiPhai             (SphereCollider, HeartPart)
-        │   └── Label              (TextMeshPro, FaceCamera)
+        ├── TamNhiPhai             (SphereCollider bán kính ~1.5 cm, HeartPart)
+        │   ├── Marker             (Sphere nhỏ có màu, không Collider)
+        │   └── Label              (TextMeshPro, FaceCamera, scale 0.01)
         ├── TamNhiTrai             ...
         ├── TamThatPhai            ...
-        └── TamThatTrai            ...
+        ├── TamThatTrai            ...
+        ├── DongMachChu            ... (động mạch chủ)
+        ├── DongMachPhoi           ... (thân động mạch phổi)
+        ├── TinhMachChuTren        ... (tĩnh mạch chủ trên)
+        ├── TinhMachChuDuoi        ... (tĩnh mạch chủ dưới)
+        ├── TinhMachPhoi           ... (tĩnh mạch phổi)
+        ├── DongMachVanhPhai       ... (động mạch vành phải)
+        ├── DongMachVanhTrai       ... (động mạch vành trái)
+        └── MomTim                 ... (mỏm tim)
 Canvas                             (Screen Space - Overlay, HeadsetView)
 ├── LeftEye                        (RawImage)  [└── Reticle (Image, tùy chọn)]
 └── RightEye                       (RawImage)  [└── Reticle (Image, tùy chọn)]
@@ -203,9 +221,10 @@ Chọn `XR Origin/Camera Offset/Main Camera`:
 2. Tắt **Post Processing** trên Camera (đỡ tốn cho máy yếu).
 3. **Add Component → GazeLabel**:
    - **Cam**: để trống (tự lấy Camera trên cùng object, rồi đến `Camera.main`).
-   - **Max Distance** = 3, **Dwell Time** = 1.5.
+   - **Max Distance** = 3, **Dwell Time** = 1.5, **Tap To Select** = bật.
    - **Layers**: nên chỉ chọn layer chứa Hotspots (xem Bước 6.6).
    - **Reticle Fills**: tùy chọn (xem Bước 6.8).
+   - Chỉ để **một** `GazeLabel` trong scene, trên camera. Nếu `XR Origin` cũng có `GazeLabel` thì xóa đi (menu **Heart VR → Thiết lập Hotspots** tự xóa).
 
 ### Bước 6.3 — Theo dõi marker
 Chọn `XR Origin`:
@@ -218,6 +237,8 @@ Chọn `XR Origin`:
    - **Heart Anchor** = kéo `HeartAnchor` **từ cửa sổ Hierarchy** (không kéo từ cửa sổ Project).
    - **Emerge** = kéo `HeartAnchor` vào (Unity tự lấy component `HeartEmerge` trên đó).
    - **Image Name** = `heart` (hoặc để trống để nhận mọi ảnh trong thư viện).
+   - **Limited Timeout** = 1 (giây ở Limited liên tục trước khi coi là mất dấu).
+   - **Smoothing** = 12 (càng lớn càng bám sát marker nhưng dễ rung).
    - **Debug Logs** = bật khi đang thử, tắt khi build bản chính.
 
 > `HeartAnchor` phải **có sẵn trong scene**. Vị trí của nó trong Editor không quan trọng vì lúc chạy sẽ bị dời tới chỗ marker; quan trọng là vị trí các object con so với nó. Khi app chạy, `HeartTracker` tắt `HeartAnchor` cho tới khi thấy marker. Đặt nó ở gốc Hierarchy hoặc làm con của `XR Origin` đều được, **không** đặt làm con của camera.
@@ -247,15 +268,32 @@ Quy ước tọa độ trong `HeartAnchor`: **mặt giấy là y = 0, trục Y h
 6. Trạng thái lúc này của `HeartModel` (vị trí, kích thước) chính là trạng thái **"đã ra hết"**. Lúc chạy, `HeartEmerge` sẽ bắt đầu từ thấp hơn `Sink Depth` mét và nhỏ hơn rồi đi dần tới trạng thái này.
 
 ### Bước 6.6 — Hotspots (các bộ phận tim)
-1. Tạo object rỗng `Hotspots` làm con của `HeartModel` (để nó lên xuống cùng tim).
+**Cách nhanh:** sau khi đã tạo `Hotspots` và các bộ phận có `HeartPart` (mục 1–3.3 dưới đây) và gán `Hotspots` vào `HeartEmerge` (Bước 6.7), chọn menu **Heart VR → Thiết lập Hotspots**. Công cụ sẽ:
+- đặt `Hotspots` về Position (0,0,0), Rotation 0, Scale 1;
+- tạo thêm các bộ phận còn thiếu trong danh sách 12 bộ phận ở sơ đồ Hierarchy trên;
+- với mỗi bộ phận: Scale 1, **Sphere Collider** bán kính 1.5 cm, thêm sphere nhỏ có màu tên `Marker` (material trong `Assets/Materials/Hotspots/`), tạo nhãn `Label` bằng TextMeshPro 3D (tên tiếng Anh, ví dụ "Right atrium", gắn `FaceCamera`, scale 0.01) và kéo sẵn vào ô **Label** và **Marker** của `HeartPart`;
+- bộ phận mới hoặc đang nằm ngoài tim được đặt vào **vị trí đo sẵn trên `heart.glb`** (tâm nhĩ trên hai tiểu nhĩ, động mạch vành trái trên rãnh liên thất trước, động mạch chủ trên cung động mạch chủ…; các điểm cách nhau ≥ 3 cm), rồi tự dò bề mặt lưới để chấm nằm sát mặt tim. Dùng **Heart VR → Thiết lập Hotspots (đặt lại vị trí)** để đặt lại **tất cả** 12 điểm theo vị trí đo sẵn (mất các chỉnh tay trước đó). Đổi sang mô hình tim khác thì phải đo và sửa lại bảng `Parts` trong `HeartSceneSetup.cs`;
+- xóa `GazeLabel` thừa không nằm trên camera (ví dụ trên `XR Origin`);
+- gắn `HeartInteraction` lên `HeartAnchor` nếu chưa có.
+
+Sau đó kiểm tra các điểm, chỉnh thêm nếu muốn (trong phạm vi khoảng ±0.1 m quanh tim) và **Ctrl+S**:
+- Bấm vào chấm màu trong cửa sổ Scene (Unity chọn cả bộ phận, Inspector phải hiện **Heart Part**), nhấn **W**, kéo mũi tên đỏ/xanh dương để dời trên mặt giấy, mũi tên xanh lá để chỉnh độ cao.
+- Nhìn từ trên (**Top**) để kéo ngang tới đúng chỗ, rồi chọn menu **Heart VR → Đặt các điểm sát bề mặt tim** để độ cao tự khớp bề mặt (đang chọn điểm nào thì chỉ chỉnh điểm đó, không chọn gì thì chỉnh tất cả). Không cần tự chỉnh mũi tên xanh lá. **Alt + kéo chuột trái** để xoay góc nhìn, cuộn chuột để zoom, **F** để zoom tới object đang chọn.
+- Nhãn `Label` được ẩn sẵn trong Editor cho đỡ rối (lúc chạy app tự hiện khi chọn); muốn xem thì tick ô cạnh tên `Label` trong Inspector, xem xong bỏ tick.
+
+Chạy lại menu không làm mất vị trí đã chỉnh (trừ lệnh "đặt lại vị trí"); `Marker` và `Label` được tạo lại. Có thể **Ctrl+Z** để hoàn tác. Nếu chưa có TMP Essential Resources, công cụ sẽ hỏi import; import xong chạy lại menu.
+
+**Làm bằng tay:**
+1. Tạo object rỗng `Hotspots` làm con của `HeartModel` (để nó lên xuống cùng tim), Position (0,0,0).
 2. Tạo layer mới tên `Hotspot` (**Inspector → Layer → Add Layer…**), gán cho `Hotspots` và mọi con của nó (chọn **Yes, change children**).
 3. Với mỗi bộ phận (`TamNhiPhai`, `TamNhiTrai`, `TamThatPhai`, `TamThatTrai`, …):
    1. Tạo object rỗng làm con của `Hotspots`, đặt vào đúng chỗ bộ phận đó trên mô hình tim.
-   2. **Add Component → Sphere Collider**, chỉnh **Radius** khoảng 0.01–0.02 (1–2 cm) để dễ nhìn trúng. Có thể tick **Is Trigger**.
+   2. **Add Component → Sphere Collider**, chỉnh **Radius** khoảng 0.015–0.02 (1.5–2 cm) để dễ nhìn trúng. Có thể tick **Is Trigger**. Scale của bộ phận để (1,1,1).
    3. **Add Component → HeartPart**.
-   4. Tạo nhãn: chuột phải vào bộ phận → **3D Object → Text - TextMeshPro**, đặt tên `Label`, nhập tên tiếng Việt (ví dụ "Tâm nhĩ phải"), đặt hơi cao hơn bộ phận. Chữ trong thế giới thật rất nhỏ: chỉnh **Font Size** và Scale cho chữ cao khoảng 1 cm (ví dụ Font Size 1, Scale 0.01).
-   5. Trên `Label`: **Add Component → FaceCamera** (để trống ô Target).
-   6. Quay lại bộ phận, trong **HeartPart**: kéo `Label` vào ô **Label**. **Show On Start** để tắt.
+   4. (Tùy chọn) Thêm một **3D Object → Sphere** nhỏ làm con (Scale 0.012, xóa Collider của nó), gán material có màu, để người xem biết chỗ nào chọn được.
+   5. Tạo nhãn: chuột phải vào bộ phận → **3D Object → Text - TextMeshPro**, đặt tên `Label`, nhập tên bộ phận (ví dụ "Right atrium"), đặt hơi cao hơn bộ phận. Chữ trong thế giới thật rất nhỏ: Scale 0.01 và **Font Size** khoảng 14 thì chữ cao khoảng 1.4 cm.
+   6. Trên `Label`: **Add Component → FaceCamera** (để trống ô Target).
+   7. Quay lại bộ phận, trong **HeartPart**: kéo `Label` vào ô **Label**, kéo sphere màu (nếu có) vào ô **Marker**. **Show On Start** để tắt.
 4. Không cần tắt `Hotspots` bằng tay: `HeartEmerge` tự tắt lúc bắt đầu và chỉ bật khi tim đã ra hết.
 5. Quay lại `Main Camera` → `GazeLabel` → **Layers** = chỉ chọn `Hotspot`.
 
@@ -269,6 +307,8 @@ Chọn `HeartAnchor` → **Add Component → HeartEmerge**:
 - **Replay After Lost** = 2.
 - **Debug Logs** = bật khi đang thử.
 
+Tiếp tục trên `HeartAnchor` → **Add Component → HeartInteraction** (menu **Heart VR → Thiết lập Hotspots** tự gắn). Không cần kéo gì vào: script lấy `HeartModel` và `Hotspots` từ `HeartEmerge`. Lúc chạy, nó tạo object `InteractPivot` ở tâm tim (con của `HeartModel`) và chuyển `Visual` + `Hotspots` vào đó, nên trong Hierarchy lúc Play sẽ thấy cấp này; trong Editor (không Play) cấu trúc giữ nguyên.
+
 ### Bước 6.8 — Chế độ kính VR (Canvas)
 1. Chuột phải → **UI → Canvas**. **Render Mode = Screen Space - Overlay**.
 2. Trong Canvas tạo 2 **UI → Raw Image**: `LeftEye` và `RightEye`. Không cần chỉnh vị trí, `HeadsetView` tự chia đôi màn hình.
@@ -278,6 +318,10 @@ Chọn `HeartAnchor` → **Add Component → HeartEmerge**:
    - **Resolution Scale** = 0.6 (giảm xuống 0.4–0.5 nếu máy giật).
    - **Target Fps** = 30.
    - **Auto Layout** = bật.
+   - **Stereo** = bật (tim có chiều sâu 3D; tắt nếu máy quá yếu), **Ipd** = 0.064.
+   - **Lens Correction** = bật, **K1** = 0.22, **K2** = 0.24 (giá trị của Cardboard v1; chỉnh theo kính thật: đường thẳng ở mép hình cong phình ra thì giảm, cong thắt vào thì tăng).
+   - **Lens Shader** = kéo `Assets/Scripts/LensDistortUI.shader` vào (cần khi build, nếu không shader có thể bị loại khỏi bản build).
+   - `HeadsetView` tự khóa màn hình **ngang (Landscape Left)**, vì cách cắt nửa giữa khung hình chỉ đúng khi máy nằm ngang.
 4. **(Tùy chọn) Vòng tiến độ nhìn:** trong mỗi RawImage tạo **UI → Image** tên `Reticle`, anchor ở giữa (Alt + chọn preset middle-center), kích thước khoảng 40 × 40.
    - **Source Image** = một sprite hình tròn (ví dụ sprite có sẵn `Knob`).
    - **Image Type = Filled**, **Fill Method = Radial 360**, **Fill Amount = 0**.
@@ -305,10 +349,17 @@ Chọn `HeartAnchor` → **Add Component → HeartEmerge**:
 1. Mở app, đặt điện thoại **nằm ngang** vào kính, đường chia giữa 2 hình trùng với vách ngăn giữa 2 thấu kính. Camera sau phải không bị che.
 2. Đặt marker phẳng trên bàn, đeo kính, nhìn xuống marker ở khoảng cách 30–50 cm.
 3. Chờ tim chui ra hết (mặc định 4 giây).
-4. Nhìn thẳng vào một bộ phận tim (tâm điểm là giữa mỗi nửa màn hình). Giữ ánh nhìn **1.5 giây** → nhãn bật. Nhìn ra chỗ khác rồi nhìn lại 1.5 giây → nhãn tắt.
-5. Nếu marker bị mất dấu hoàn toàn rồi thấy lại sau hơn 2 giây, tim sẽ chui ra lại từ đầu và các nhãn được tắt hết.
+4. Nhìn thẳng vào một bộ phận tim (tâm điểm là giữa mỗi nửa màn hình). Giữ ánh nhìn **1.5 giây** → nhãn bật. Nhìn ra chỗ khác rồi nhìn lại 1.5 giây → nhãn tắt. Kính có nút bấm (chạm màn hình) thì bấm nút để bật/tắt ngay bộ phận đang nhìn.
+5. Nếu marker ra khỏi khung hình quá 1 giây, tim tắt; thấy lại sau hơn 2 giây thì tim chui ra lại từ đầu và các nhãn được tắt hết.
 
-> Hai nửa màn hình hiển thị **cùng một hình** (không phải 3D nổi) và không có hiệu chỉnh méo thấu kính. Nếu thấy mờ, chỉnh tiêu cự / khoảng cách thấu kính của kính.
+> Với **Stereo** bật, hai mắt thấy tim từ hai góc lệch nhau nên tim nổi 3D. Ảnh camera thật phía sau vẫn là **một ảnh chung** cho hai mắt (điện thoại chỉ có một camera), nên tờ giấy trông phẳng. Hình được méo thùng trước để bù méo của thấu kính; nếu mép hình vẫn cong, chỉnh **K1**/**K2**. Nếu thấy mờ, chỉnh tiêu cự / khoảng cách thấu kính của kính.
+
+**Không đeo kính (cầm tay):** tắt object `Canvas` (khi đó `HeadsetView` không chạy, màn hình hiện hình camera AR bình thường). Khi tim đã hiện:
+- **Kéo một ngón** trên màn hình: kéo ngang xoay tim quanh trục vuông góc tờ giấy, kéo dọc lật tim tới/lui.
+- **Chụm / mở hai ngón**: thu nhỏ / phóng to (0.5×–3×). Đáy tim luôn giữ trên mặt giấy.
+- **Chạm nhanh vào chấm màu** (hotspot) trên tim: hiện tên bộ phận đó và chấm màu to lên; nhãn của bộ phận đang hiện trước đó tự ẩn. Chạm lại bộ phận đang chọn để ẩn. Các chấm chỉ bấm được sau khi tim đã trồi lên hết. Muốn hiện được nhiều nhãn cùng lúc thì tắt **Only One Label** của `GazeLabel`.
+- Khi tim trồi lên lại (mất dấu marker quá 2 giây), góc xoay và độ zoom trở về ban đầu.
+- Nhìn chờ 1.5 giây mặc định chỉ dùng khi đeo kính (bật **Dwell In Handheld** của `GazeLabel` nếu muốn dùng cả khi cầm tay).
 
 ---
 
@@ -317,20 +368,38 @@ Chọn `HeartAnchor` → **Add Component → HeartEmerge**:
 | Script | Thông số | Mặc định | Ý nghĩa |
 |---|---|---|---|
 | `HeartTracker` | Image Name | `""` | Tên ảnh trong thư viện cần theo dõi; trống = mọi ảnh |
+| | Limited Timeout | 1 | Số giây ở Limited liên tục trước khi coi là mất dấu |
+| | Smoothing | 12 | Độ nhanh bám theo marker (1/giây); lớn = bám sát nhưng rung |
 | | Debug Logs | bật | In log `[DBG]` |
 | `HeartEmerge` | Duration | 4 | Số giây tim trồi lên |
 | | Sink Depth | 0.12 | Độ sâu ban đầu dưới mặt giấy (m), phải > chiều cao tim |
 | | Start Scale | 0.3 | Kích thước lúc đầu so với kích thước cuối |
 | | Replay After Lost | 2 | Mất dấu lâu hơn số giây này thì phát lại |
 | | Debug Logs | bật | In tiến độ mỗi 0.5 giây |
+| `HeartInteraction` | Degrees Per Screen | 270 | Số độ xoay khi kéo hết một chiều rộng màn hình |
+| | Allow Tilt | bật | Kéo dọc để lật tim; tắt thì chỉ xoay ngang |
+| | Min Scale / Max Scale | 0.5 / 3 | Giới hạn zoom |
+| | Drag Threshold Pixels | 20 | Ngón tay đi quá mức này mới tính là kéo |
+| | Scroll Zoom Step | 0.1 | Mỗi nấc cuộn chuột zoom bao nhiêu (Editor) |
 | `GazeLabel` | Max Distance | 3 | Tầm xa tia nhìn (m) |
 | | Layers | Everything | Layer tia nhìn được phép trúng |
 | | Dwell Time | 1.5 | Số giây phải nhìn để bật/tắt nhãn |
+| | Dwell In Handheld | tắt | Dùng nhìn chờ cả khi cầm tay (không đeo kính) |
+| | Only One Label | bật | Chọn một bộ phận thì chỉ nhãn của nó hiện, nhãn khác tự ẩn; tắt = mỗi bộ phận bật/tắt riêng |
+| | Tap To Select | bật | Chạm màn hình / click chuột để bật/tắt nhãn |
+| | Tap Max Seconds | 0.35 | Nhấn lâu hơn mức này thì không tính là chạm |
+| | Tap Max Move Pixels | 20 | Ngón tay đi xa hơn mức này thì là kéo, không phải chạm |
 | | Reticle Fills | trống | Các Image hiện tiến độ nhìn |
 | `HeadsetView` | Resolution Scale | 0.6 | Độ phân giải RenderTexture so với màn hình |
 | | Target Fps | 30 | Khung hình/giây tối đa |
 | | Auto Layout | bật | Tự chia đôi màn hình cho 2 RawImage |
+| | Stereo | bật | Hai camera mắt vẽ tim để có chiều sâu (tốn thêm một lần vẽ tim) |
+| | Ipd | 0.064 | Khoảng cách hai mắt (m) |
+| | Lens Correction | bật | Bù méo thấu kính |
+| | K1 / K2 | 0.22 / 0.24 | Hệ số méo thùng |
 | `HeartPart` | Show On Start | tắt | Nhãn hiện sẵn khi bắt đầu |
+| | Marker | (menu tự gán) | Chấm màu của bộ phận, được phóng to khi đang chọn |
+| | Selected Marker Scale | 1.6 | Chấm màu to gấp mấy lần khi đang chọn |
 | `FitHeartToMarker` | Target Height | 0.10 | Kích thước tim mong muốn (m) |
 | | Fit Longest Side | bật | Bật: cạnh dài nhất = Target Height; tắt: chiều cao Y = Target Height |
 
@@ -345,10 +414,10 @@ Khi **Debug Logs** bật, `HeartTracker` và `HeartEmerge` in các dòng bắt �
 | `[DBG] HeartTracker: nhận ảnh mới 'heart' (Tracking)` | ARCore vừa nhận ra marker |
 | `[DBG] HeartTracker: 'heart' trackingState Tracking -> Limited` | Trạng thái theo dõi đổi (chỉ in khi thay đổi) |
 | `[DBG] HeartTracker: BẬT HeartAnchor tại (x, y, z) (mất dấu 3.20s)` | Tim được bật |
-| `[DBG] HeartTracker: TẮT HeartAnchor tại (x, y, z) (trackingState = None)` | Tim bị tắt, kèm lý do |
+| `[DBG] HeartTracker: TẮT HeartAnchor tại (x, y, z) (Limited quá 1.0s)` | Tim bị tắt, kèm lý do (`Limited quá …`, `trackingState = None`, `ảnh bị xóa khỏi danh sách`) |
 | `[DBG] HeartEmerge: progress 40% (1.60/4s), HeartModel localPosition (...)` | Mỗi 0.5 giây khi tim đang trồi lên, và một dòng khi xong |
 
-`GazeLabel` in cảnh báo (một lần) nếu không tìm thấy camera hoặc ô **Reticle Fills** có phần tử trống.
+`GazeLabel` in cảnh báo (một lần) nếu không tìm thấy camera hoặc ô **Reticle Fills** có phần tử trống. `HeadsetView` báo lỗi và tự tắt nếu thiếu **Ar Camera** / **Left Eye** / **Right Eye**.
 
 **Xem log trên điện thoại:**
 - Trong Unity: **Window → Analysis → Android Logcat** (cài package *Android Logcat* nếu chưa có), gõ `[DBG]` vào ô lọc.
@@ -369,7 +438,14 @@ Khi **Debug Logs** bật, `HeartTracker` và `HeartEmerge` in các dòng bắt �
 | Nhìn mãi không bật nhãn | Tim chưa ra hết (Hotspots còn tắt); bộ phận thiếu Collider; **Layers** của GazeLabel không chứa layer Hotspot; Occluder còn Collider | Bước 6.4, 6.6 |
 | Nhãn bị ngược / không quay về người xem | Thiếu `FaceCamera`; camera không có tag `MainCamera` | Bước 6.1, 6.6 |
 | Console báo lỗi `InvalidOperationException` về `UnityEngine.Input` | EventSystem dùng Standalone Input Module | Bước 6.8 mục 5 |
-| Tim không chui ra lại khi quay đi rồi nhìn lại | Đúng thiết kế: trạng thái Limited vẫn giữ tim bật; chỉ phát lại khi ảnh về None hoặc bị xóa rồi thấy lại sau > 2 s | Giảm/tăng **Replay After Lost** nếu cần |
+| Lúc build hiện hộp thoại *Input Handling on Android* ("Both" is not supported) | **Active Input Handling** đang là *Both* | Bấm **Cancel Build**, đặt **Input System Package (New)** (Bước 4.5), cho Unity khởi động lại rồi build lại |
+| Tim không chui ra lại khi quay đi rồi nhìn lại | Mất dấu chưa quá **Replay After Lost** (2 s, tính từ lần cuối ở trạng thái Tracking) | Giảm/tăng **Replay After Lost** nếu cần |
+| Tim tắt/bật liên tục dù marker vẫn trong khung hình | Máy yếu rơi về Limited lâu hơn **Limited Timeout** | Tăng **Limited Timeout** (1.5–2 s); thêm ánh sáng |
+| Tim rung | **Smoothing** quá lớn | Giảm **Smoothing** (8–10) |
+| Tim trễ, trượt theo khi di chuyển máy | **Smoothing** quá nhỏ | Tăng **Smoothing** |
+| Chạm vào chấm màu không hiện tên | Tim chưa trồi lên hết (Hotspots còn tắt); chạm hơi lâu hoặc trượt ngón (bị tính là kéo); `HeartPart` chưa gán **Label**; **Layers** của `GazeLabel` không chứa layer của Hotspots | Chạm nhanh, gọn; chạy lại **Heart VR → Thiết lập Hotspots**; tăng **Tap Max Seconds** / **Tap Max Move Pixels** |
+| Kéo/chụm không xoay, không zoom | Thiếu `HeartInteraction` trên `HeartAnchor`; đang bật chế độ kính (`Canvas` đang bật) | Bước 6.7; tắt `Canvas` khi cầm tay |
+| Đeo kính thấy hai hình tim không chập lại | **Ipd** không khớp kính / mắt | Chỉnh **Ipd**, hoặc tắt **Stereo** |
 | Giật, nóng máy | Máy yếu | Xem mục 12 |
 
 ---
@@ -377,6 +453,7 @@ Khi **Debug Logs** bật, `HeartTracker` và `HeartEmerge` in các dòng bắt �
 ## 12. Mẹo cho điện thoại yếu
 
 - Giảm **Resolution Scale** của `HeadsetView` xuống 0.4–0.5.
+- Nếu vẫn giật: tắt **Stereo** của `HeadsetView` (tim chỉ vẽ một lần).
 - **Tắt Debug Logs** trên `HeartTracker` và `HeartEmerge` khi build bản chính (ghi log tốn CPU).
 - Dùng `Mobile_RPAsset`: tắt **HDR**, tắt **Shadows** (hoặc tắt *Cast Shadows* trên Directional Light), **Anti-aliasing (MSAA) = Disabled**.
 - Tắt **Post Processing** trên camera, có thể xóa `Global Volume`.

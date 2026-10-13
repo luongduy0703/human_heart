@@ -70,7 +70,7 @@ public class FitHeartToMarker : MonoBehaviour
     }
 
     // Gộp 8 góc hộp bao (localBounds) của từng Renderer, đổi sang tọa độ của 'space'
-    static Bounds GetBoundsIn(Transform space, Renderer[] renderers)
+    internal static Bounds GetBoundsIn(Transform space, Renderer[] renderers)
     {
         bool hasPoint = false;
         Bounds result = new Bounds();

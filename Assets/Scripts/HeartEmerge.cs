@@ -29,6 +29,12 @@ public class HeartEmerge : MonoBehaviour
 
     const float LogInterval = 0.5f;
 
+    public Transform HeartModel => heartModel;
+    public GameObject Hotspots => hotspots;
+
+    // Báo khi hoạt ảnh trồi lên bắt đầu lại từ đầu (HeartInteraction dùng để trả tim về góc nhìn gốc)
+    public event System.Action Replayed;
+
     Vector3 finalPos, finalScale, startPos;
     float elapsed;
     float nextLog;
@@ -70,6 +76,7 @@ public class HeartEmerge : MonoBehaviour
                 part.Show(false);
             hotspots.SetActive(false);
         }
+        Replayed?.Invoke();
     }
 
     void Update()
