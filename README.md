@@ -1,6 +1,6 @@
-# Trái tim sống — AR trong kính VR
+# Trái tim sống 
 
-Bài thực hành AR: điện thoại đặt trong kính VR (kiểu Cardboard), nhìn vào một tờ giấy in marker thì **trái tim 3D chui ra dần dần từ mặt giấy**. Khi tim đã ra hết, **nhìn chằm chằm vào một bộ phận tim khoảng 1.5 giây** để bật/tắt nhãn tên của bộ phận đó (chọn bằng ánh nhìn). Khi cầm máy trên tay (không đeo kính): **kéo một ngón để xoay tim**, **chụm/mở hai ngón để thu nhỏ/phóng to**, **chạm vào chấm màu (hotspot)** trên tim để hiện tên bộ phận đó (chỉ nhãn của bộ phận đang chọn hiện, nhãn khác tự ẩn). Có 12 bộ phận, nhãn ghi bằng tiếng Anh: Right/Left atrium, Right/Left ventricle, Aorta, Pulmonary trunk, Superior/Inferior vena cava, Pulmonary veins, Right/Left coronary artery, Apex.
+Bài thực hành: điện thoại nhìn vào một tờ giấy in marker thì **trái tim 3D chui ra dần dần từ mặt giấy**. Khi tim đã ra hết, **nhìn chằm chằm vào một bộ phận tim khoảng 1.5 giây** để bật/tắt nhãn tên của bộ phận đó (chọn bằng ánh nhìn). Khi cầm máy trên tay: **kéo một ngón để xoay tim**, **chụm/mở hai ngón để thu nhỏ/phóng to**, **chạm vào chấm màu (hotspot)** trên tim để hiện tên bộ phận đó (chỉ nhãn của bộ phận đang chọn hiện, nhãn khác tự ẩn). Có 12 bộ phận, nhãn ghi bằng tiếng Anh: Right/Left atrium, Right/Left ventricle, Aorta, Pulmonary trunk, Superior/Inferior vena cava, Pulmonary veins, Right/Left coronary artery, Apex.
 
 Project được làm nhẹ để chạy trên điện thoại cấu hình yếu (ví dụ Vsmart Joy): khóa 30 fps, render ở độ phân giải thấp hơn màn hình, không dùng hậu kỳ.
 
