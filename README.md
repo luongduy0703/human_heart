@@ -1,4 +1,4 @@
-Bài số 4 - Phát triển ứng dụng thực tại tăng cường Trái tim sống
+## Bài số 4 - Phát triển ứng dụng thực tại tăng cường Trái tim sống
 
 Lớp học Thực tại tăng cường - ngành Công nghệ giáo dục, Đại học Bách Khoa Hà Nội
 Bài trợ giáo này phát triển từ file trợ giáo gốc "Tracking in Unity" của giảng viên. Ứng dụng điện thoại nhìn vào một tờ giấy in marker thì **trái tim 3D chui ra dần dần từ mặt giấy**. Khi tim đã ra hết, **nhìn chằm chằm vào một bộ phận tim khoảng 1.5 giây** để bật/tắt nhãn tên của bộ phận đó (chọn bằng ánh nhìn). Khi cầm máy trên tay: **kéo một ngón để xoay tim**, **chụm/mở hai ngón để thu nhỏ/phóng to**, **chạm vào chấm màu (hotspot)** trên tim để hiện tên bộ phận đó (chỉ nhãn của bộ phận đang chọn hiện, nhãn khác tự ẩn). Có 12 bộ phận, nhãn ghi bằng tiếng Anh: Right/Left atrium, Right/Left ventricle, Aorta, Pulmonary trunk, Superior/Inferior vena cava, Pulmonary veins, Right/Left coronary artery, Apex.
